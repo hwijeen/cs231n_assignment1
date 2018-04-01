@@ -30,10 +30,41 @@ def softmax_loss_naive(W, X, y, reg):
   # here, it is easy to run into numeric instability. Don't forget the        #
   # regularization!                                                           #
   #############################################################################
-  pass
+  
+  N = X.shape[0]
+  C = W.shape[1]
+
+  for i in range(N):
+    X_i = X[i]    # D,    
+    Wx_i = np.dot(X_i, W)    # C,   
+    Wx_i -= np.max(Wx_i)    # for numericall stability 
+    y_i_hat = np.zeros(C)    # C,
+
+    denom = 0
+    for j in range(C):
+      y_i_hat[j] = np.exp(Wx_i[j])
+      denom += y_i_hat[j]
+    y_i_hat /= denom
+
+    for j in range(C):
+      dW[:,j] += (1/denom)*np.exp(Wx_i[j]) * X[i]
+      if j==y[i]:
+        dW[:,j] -= X[i]
+
+    # CELoss
+    loss_i = -np.log(y_i_hat[y[i]])
+    loss += loss_i
+  loss /= N
+  dW /= N
+
+  # regularization
+  loss += 0.5 * reg * np.sum(W * W)
+  dW += reg * W
+  
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################
+
 
   return loss, dW
 
@@ -54,7 +85,29 @@ def softmax_loss_vectorized(W, X, y, reg):
   # here, it is easy to run into numeric instability. Don't forget the        #
   # regularization!                                                           #
   #############################################################################
-  pass
+  
+  N = X.shape[0]
+  C = W.shape[1]
+
+  score = np.dot(X,W)    # NxC
+  score -= np.max(score)
+  expscore = np.exp(score)    # NxC
+  denom = np.sum(expscore, axis=1)    #Nx1 
+  numer = expscore[range(N), y]    # 
+  
+  loss = np.sum(-1*np.log(numer/denom)) / N
+  loss += 0.5 * reg * np.sum(W*W)
+
+  correct_class = np.zeros((N, C))
+  correct_class[xrange(N),y] = -1
+  dW_term1 = X.T.dot(correct_class)
+  dW_term2 = (X.T / denom).dot(expscore)
+  dW = dW_term1 + dW_term2
+
+  dW /= float(N)
+  dW += reg*W
+
+
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################
